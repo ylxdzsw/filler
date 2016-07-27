@@ -1,4 +1,4 @@
-function infer(x::Symbol, dep::Set{Symbol}, row::Dict{Symbol,Tuple{Any, Float64}}, df::DataFrame)
+function infer(x::Symbol, dep::Vector{Symbol}, row::Dict{Symbol,Tuple{Any, Float64}}, df::DataFrame)
     candidates = df[x] |> each_dropna |> unique
 
     candidates_with_scores = map(candidates) do c

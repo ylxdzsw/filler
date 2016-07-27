@@ -34,7 +34,7 @@ function fill!(row::DataFrameRow, rules::Vector{Rule}, df::DataFrame; minconfide
 
         c * conf > minconfidence && return v, c * conf
 
-        v = websearch()
+        v = websearch(x, best.dependency, results, df)
 
         v == "" ? (NA, 0.) : (v, conf)
     end
