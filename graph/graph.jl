@@ -1,11 +1,11 @@
-typealias Dep Tuple{Int, Float64, Float64}
+typealias Dep Tuple{Int, Float64}
 
 function gengraph(rules::Vector{Rule})
-    # (field, [(dependency, confidence, support)])
+    # (field, [(dependency, confidence)])
     nodes = Tuple{Symbol, Vector{Dep}}[]
     namedict = Dict{Symbol, Int}()
 
-    genlogicnode(x::Vector{Int}) = push!(nodes, (:&, map(x->(x,-1.,-1.), x))) |> length
+    genlogicnode(x::Vector{Int}) = push!(nodes, (:&, map(x->(x,-1.), x))) |> length
 
     getnode(x::Symbol) = begin
         i = get(namedict, x, 0)
@@ -16,7 +16,7 @@ function gengraph(rules::Vector{Rule})
         x = getnode(r.var)
         deps = [r.dependency; map(car, r.condition)] |> unique
         y = length(deps) > 1 ? map(getnode, deps) |> genlogicnode : deps[1] |> getnode
-        push!(cadr(nodes[x]), (y, r.confidence, r.support))
+        push!(cadr(nodes[x]), (y, r.confidence))
     end
 
     nodes
@@ -30,7 +30,7 @@ function gengraphviz(G::Vector{Tuple{Symbol, Vector{Dep}}})
         print(buf, "\tn", i, " [label=\"", car(node), "\" shape=", logic?"box":"ellipse", "]\n")
         for (index, confidence, support) in cadr(node)
             print(buf, "\tn", index, " -> n", i)
-            logic || @printf(buf, " [label=\"%.1f%%, %.1f%%\"]", 100confidence, 100support)
+            logic || @printf(buf, " [label=\"%.1f%%\"]", 100confidence)
             println(buf)
         end
     end

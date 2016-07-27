@@ -4,27 +4,31 @@ immutable Rule
     var::Symbol
     dependency::Vector{Symbol}
     condition::Vector{Tuple{Symbol,Function}} # 条件之间都是与的关系，或可以通过拆成两个rule来实现
-    formula::Function
+    formula::Nullable{Function}
     confidence::Float64
-    support::Float64
 end
 
 function parse_rule(p::AbstractString, c::AbstractString, func::AbstractString, data::DataFrame)
     l, r = parse_formula(p)
     cond = parse_condition(c)
-    form = parse_function(r, func)
+    func = rstrip(func)
 
-    df = reduce(data, cond) do x,y
-        matches = map(cadr(y), x[car(y)]) |> each_replacena(false) |> collect
-        x[matches |> Vector{Bool}, :] # maybe BitVector will be faster?
+    if endswith(func, '%')
+        form = nothing
+        conf = parse(Float64, func[1:end-1])
+    else
+        form = Expr(:->, Expr(:tuple, args...), parse(func)) |> eval
+
+        df = reduce(data, cond) do x,y
+            matches = map(cadr(y), x[car(y)]) |> each_replacena(false) |> collect
+            x[matches |> Vector{Bool}, :] # maybe BitVector will be faster?
+        end
+
+        conf = df[l] .== map(eachrow(df)) do x form(map(cadr, x[r])...) end
+        conf = conf |> dropna |> mean
     end
 
-    confidence = df[l] .== map(eachrow(df)) do x form(map(cadr, x[r])...) end
-    confidence = confidence |> dropna
-    support = length(confidence) / nrow(data)
-    confidence = mean(confidence)
-
-    Rule(l, r, cond, form, confidence, support)
+    Rule(l, r, cond, Nullable{Function}(form), conf)
 end
 
 function parse_formula(x::AbstractString)
@@ -63,20 +67,10 @@ function genfun(x::Expr)
     end
 end
 
-function parse_function(args::Vector{Symbol}, body::AbstractString)
-    Expr(:->, Expr(:tuple, args...), parse(body)) |> eval
-end
-
-function meet(rule::Rule, row::DataFrameRow)
-    for (s,f) in rule.condition
-        if isna(row[s])
-            return NA
-        elseif f(row[s])
-            continue
-        else
-            return false
-        end
+function readrules(file::AbstractString, df::DataFrame)
+    lines = open(readlines, file)
+    map(lines) do x
+        x = split(x, ';')
+        parse_rule(x..., df)
     end
-
-    true
 end
