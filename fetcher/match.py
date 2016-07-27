@@ -20,7 +20,7 @@ def search_match(key, data, pattern):
                     values[s] = values.get(s, 0) + 1
     elif r == "":
         for result in results:
-            v = result.split(r)
+            v = result.split(l)
             if len(v) > 1:
                 v = v[1]
                 for i in range(1, min(len(v), 40)):
@@ -28,9 +28,8 @@ def search_match(key, data, pattern):
                     values[s] = values.get(s, 0) + 1
     else:
         for result in results:
-            v = result.split(r)
-            if len(v) > 2:
-                v = v[1]
+            if l in result and r in result:
+                v = result.split(l)[1].split(r)[0]
                 values[v] = values.get(v, 0) + 1
 
-    return max(values.items(), key=lambda x: a[1], default=("", 0))
+    return max(values.items(), key=lambda x: x[1], default=("", 0))

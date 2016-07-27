@@ -15,7 +15,7 @@ function parse_rule(p::AbstractString, c::AbstractString, func::AbstractString, 
 
     if endswith(func, '%')
         form = nothing
-        conf = parse(Float64, func[1:end-1])
+        conf = parse(Float64, func[1:end-1]) / 100
     else
         form = Expr(:->, Expr(:tuple, args...), parse(func)) |> eval
 

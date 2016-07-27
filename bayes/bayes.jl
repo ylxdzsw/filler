@@ -1,10 +1,12 @@
+fuckNA(x) = Bool[!isna(x) ? x : false for x in x]
+
 function infer(x::Symbol, dep::Vector{Symbol}, row::Dict{Symbol,Tuple{Any, Float64}}, df::DataFrame)
     candidates = df[x] |> each_dropna |> unique
 
     candidates_with_scores = map(candidates) do c
-        r = df[df[x] .== c, :]
+        r = df[fuckNA(df[x] .== c), :]
         s = mapreduce(*, dep) do i
-            sum(r[i] .== car(row[i])) / nrow(r)
+            sum(fuckNA(r[i] .== car(row[i]))) / size(r, 1)
         end
         c, s
     end

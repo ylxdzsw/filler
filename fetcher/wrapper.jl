@@ -1,3 +1,4 @@
+unshift!(PyVector(pyimport("sys")["path"]), "")
 unshift!(PyVector(pyimport("sys")["path"]), "./fetcher")
 
 @pyimport pattern as Pattern
@@ -5,23 +6,27 @@ unshift!(PyVector(pyimport("sys")["path"]), "./fetcher")
 
 const pcache = Dict{Set{Symbol}, Tuple{Vector{Symbol}, AbstractString}}()
 
-function get_pattern(involved::Set{Symbol}, df::DataFrame)
-    involved in pcache && return pcache[involved]
+function get_pattern(involved::Vector{Symbol}, df::DataFrame)
+    involved_set = Set(involved)
+    involved_set in keys(pcache) && return pcache[involved_set]
 
-    involved = [involved...]
     data = map(eachrow(df)) do row
         map(x->row[x], involved)
     end
 
-    p = Pattern.top_patterns(data)[1]
+    data = filter(data) do x !any(isna, x) end
 
-    pcache[involved] = involved, p
+    p = Pattern.top_patterns(data)[2]
+
+    pcache[involved_set] = involved, car(p)
 end
 
 function websearch(x::Symbol, dep::Vector{Symbol}, row::Dict{Symbol,Tuple{Any, Float64}}, df::DataFrame)
-    involved = [dep..., x]
-    pattern = get_pattern(involved, df)
+    pattern = get_pattern([dep..., x], df)
 
-    key = findfirst(x, car(pattern)) - 1 # index difference between julia and python
-    Match.search_match(key, map(x->row[x], car(pattern)), cadr(pattern)) |> car
+    key = findfirst(car(pattern), x) - 1 # index difference between julia and python
+
+    contains(cadr(pattern), "\$$key") || return ""
+
+    Match.search_match(key, map(x->string(car(row[x])), car(pattern)), cadr(pattern)) |> car
 end
