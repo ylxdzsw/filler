@@ -10,6 +10,12 @@ include("fetcher/wrapper.jl")
 df    = readtable("data/data.csv")
 rules = readrules("data/rules.txt", df)
 
-for row = eachrow(df)
+pos = rand(size(df, 1)) .> .95
+
+df[:Coaches][pos] = NA
+
+@time for row = eachrow(df)
     fill!(row, rules, df)
 end
+
+df[:Coaches][pos]
