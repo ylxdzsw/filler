@@ -1,6 +1,6 @@
 import Base.fill!
 
-function fill!(row::DataFrameRow, rules::Vector{Rule}, df::DataFrame; minconfidence::Float64=.8)
+function fill!(row::DataFrameRow, rules::Vector{Rule}, df::DataFrame, dict::Dict; minconfidence::Float64=.8)
     results = Dict{Symbol,Tuple{Any, Float64}}()
 
     searchfor(x::Symbol) = begin
@@ -35,7 +35,7 @@ function fill!(row::DataFrameRow, rules::Vector{Rule}, df::DataFrame; minconfide
         c * conf > minconfidence && return v, c * conf
 
         v = try
-            websearch(x, best.dependency, results, df)
+            websearch(x, best.dependency, results, df, dict)
         catch e
             println(STDERR, e)
             ""
